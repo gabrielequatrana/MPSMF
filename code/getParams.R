@@ -1,7 +1,7 @@
 library(ggplot2)
 library(readr)
 
-stock_data <- read.csv("output/MSFT_data.csv")
+stock_data <- read.csv("data/csv/MSFT_data.csv")
 
 # Create dataframe
 stock_data <- data.frame(Date = as.Date(stock_data$Date),
@@ -20,7 +20,7 @@ stock_graph <- ggplot(data = stock_data, aes(x = Date)) +
                theme_minimal()
 
 print(stock_graph)
-ggsave("output/stock.png", plot = stock_graph, width = 10, height = 4)
+ggsave("data/png/stock.png", plot = stock_graph, width = 10, height = 4)
 
 # Returns dataframe
 dates <- stock_data$Date[-1] # remove first date
@@ -43,13 +43,13 @@ returns_graph <- ggplot(data = returns_data, aes(x = Date)) +
                  theme_minimal()
 
 print(returns_graph)
-ggsave("output/returns.png", plot = returns_graph, width = 10, height = 4)
+ggsave("data/png/returns.png", plot = returns_graph, width = 10, height = 4)
 
 # Volatility (Standard Deviation of returns)
 volatility <- sd(returns_data$Adjusted, na.rm = TRUE)
 cat("\tVolatility:\t\t", volatility, "\n")
-write.csv(volatility, file = "output/volatility.txt", row.names = FALSE)
+write.csv(volatility, file = "data/txt/volatility.txt", row.names = FALSE)
 
 annualized_volatility <- sqrt(252) * volatility
 cat("\tAnnualized Volatility:\t", annualized_volatility, "\n")
-write.csv(annualized_volatility, file = "output/annualized_volatility.txt", row.names = FALSE)
+write.csv(annualized_volatility, file = "data/txt/annualized_volatility.txt", row.names = FALSE)

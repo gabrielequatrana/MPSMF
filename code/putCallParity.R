@@ -9,8 +9,8 @@ library(ggplot2)
 stock_price <- 130.21 # price on 2023-08-10
 risk_free_rate <- 0.002420839
 
-call_price <- read.csv("output/call.csv", header = TRUE)
-put_price <- read.csv("output/put.csv", header = TRUE)
+call_price <- read.csv("data/csv/call.csv", header = TRUE)
+put_price <- read.csv("data/csv/put.csv", header = TRUE)
 
 columns_to_keep <- names(call_price)[names(call_price) >= 'x116' & names(call_price) <= 'x136'] # the last value is not included
 call_price <- t(call_price[1, columns_to_keep])
@@ -30,7 +30,7 @@ put_call_parity <- ggplot(strike_prices, aes(x = Strike_Price)) +
                    theme_minimal()
 
 print(put_call_parity)
-ggsave("output/put_call_parity.png", plot = put_call_parity, width = 10, height = 6)
+ggsave("data/png/put_call_parity.png", plot = put_call_parity, width = 10, height = 6)
 
 upper_bound <- data.frame(Upper_Value = as.vector(call_price - stock_price + strike_prices))
 put <- data.frame(Put_Value = as.vector(put_price))
@@ -45,4 +45,4 @@ put_call_inequality <- ggplot(strike_prices, aes(x = Strike_Price)) +
                        theme_minimal()
 
 print(put_call_inequality)
-ggsave("output/put_call_inequality.png", plot = put_call_inequality, width = 10, height = 6)
+ggsave("data/png/put_call_inequality.png", plot = put_call_inequality, width = 10, height = 6)

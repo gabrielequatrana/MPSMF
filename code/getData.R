@@ -1,3 +1,5 @@
+# TODO comments
+
 library(quantmod)
 
 stock_name <- "MSFT"
@@ -23,4 +25,4 @@ stock_data <- data.frame(Date = index(closing_prices),
                          Close = as.vector(closing_prices),
                          Volume = as.vector(volume))
 
-write.csv(stock_data, file = "output/MSFT_data.csv" , row.names = FALSE)
+write.csv(stock_data, file = "data/csv/MSFT_data.csv" , row.names = FALSE)
