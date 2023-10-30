@@ -13,7 +13,7 @@ library(stringr)
 
 
 ################################################################################
-# TODO Comments Functions
+# Define Functions
 ################################################################################
 
 # Generate binomial tree
@@ -109,7 +109,7 @@ real_prices <- Ad(get("MSFT"))
 real_prices <- data.frame(Adjusted = as.vector(real_prices))
 
 # Read Risk-Free rate
-r <- read.csv("data/txt/10_year_risk_free_rate.txt")
+r <- read.csv("data/txt/risk_free_rate.txt")
 r <- as.numeric(r$x)
 
 # Read stock volatility
@@ -143,28 +143,27 @@ cat("\tQ tilde:\t\t", q_tilde, "\n")
 # 2. Get and print options data
 ################################################################################
 
-# Set file paths
-calls_file_name <- "MSFT_calls_options"
-puts_file_name <- "MSFT_puts_options"
-calls_parent_folder <- paste0(getwd(),"/data/csv/options/calls/")
-puts_parent_folder <- paste0(getwd(),"/data/csv/options/puts/")
+# Set file path
+straddle_file_name <- "MSFT_straddle_options"
+straddle_parent_folder <- paste0(getwd(), "/data/csv/options/")
 
-# Read last Call and Put files (2023-09-15)
-last_call_observation <- read.csv(paste0(calls_parent_folder, calls_file_name, "_2023-09-15.csv"))
-last_put_observation <- read.csv(paste0(puts_parent_folder, puts_file_name, "_2023-09-15.csv"))
+# Read last Straddle file (2023-09-15)
+last_straddle_observation <- read.csv(paste0(straddle_parent_folder, straddle_file_name, "_2023-09-15.csv"))
 
-# Generate dataframe from previously read files
-last_call_data <- data.frame(Strike = as.vector(last_call_observation$Strike),
-                             Last = as.vector(last_call_observation$Last))
-last_put_data <- data.frame(Strike = as.vector(last_put_observation$Strike),
-                            Last = as.vector(last_put_observation$Last))
+# Generate dataframe from previously read file
+last_call_data <- data.frame(Strike = as.vector(last_straddle_observation$Strike),
+                             Last = as.vector(last_straddle_observation$Call_LastPr))
+last_put_data <- data.frame(Strike = as.vector(last_straddle_observation$Strike),
+                            Last = as.vector(last_straddle_observation$Put_LastPr))
 
 # Generate dataframe with Strike values as columns
 call_dataframe <- data.frame(t(last_call_data$Last))
 colnames(call_dataframe) <- last_call_data$Strike
+call_dataframe <- call_dataframe[ , colSums(is.na(call_dataframe))==0]
 
 put_dataframe <- data.frame(t(last_put_data$Last))
 colnames(put_dataframe) <- last_put_data$Strike
+put_dataframe <- put_dataframe[ , colSums(is.na(put_dataframe))==0]
 
 # Set the date in a new column
 call_dataframe$Date <- as.Date("2023-09-15")
@@ -173,16 +172,19 @@ call_column_names <- colnames(call_dataframe)
 put_dataframe$Date <- as.Date("2023-09-15")
 put_column_names <- colnames(put_dataframe)
 
-# Read Call option files
-calls_file = list.files(calls_parent_folder)
-for (file in calls_file[-length(puts_file)]) {
+# Read straddle files to populate call and put dataframe
+straddle_files = list.files(straddle_parent_folder)
+for (file in straddle_files[-length(straddle_files)]) {
   
-  # Read Call file and generate a dataframe
-  call_observation_data <- read.csv(paste0(calls_parent_folder, file))
-  call_observation_dataframe <- data.frame(Strike = as.vector(call_observation_data$Strike),
-                                           Last = as.vector(call_observation_data$Last))
+  # Read straddle file
+  straddle_observation_data <- read.csv(paste0(straddle_parent_folder, file))
   
-  # Add a new row with NA values to the original dataframe
+  # Read call value and generate a dataframe
+  call_observation_dataframe <- data.frame(Strike = as.vector(straddle_observation_data$Strike),
+                                           Last = as.vector(straddle_observation_data$Call_LastPr))
+  
+  # Add a new row with NA values to the dataframe
+  call_observation_dataframe <- na.omit(call_observation_dataframe)
   new_row <- data.frame(matrix(NA, ncol = length(call_column_names)))
   colnames(new_row) <- call_column_names
   call_dataframe <- rbind(call_dataframe, new_row)
@@ -196,18 +198,13 @@ for (file in calls_file[-length(puts_file)]) {
   
   # Update last row of dataframe with current file
   call_dataframe[nrow(call_dataframe), names(curr_call_row)] <- unlist(curr_call_row)
-}
   
-# Read Put option files
-puts_file = list.files(puts_parent_folder)
-for (file in puts_file[-length(puts_file)]) {
-
-  # Read Put file and generate a dataframe
-  put_observation_data <- read.csv(paste0(puts_parent_folder, file))
-  put_observation_dataframe <- data.frame(Strike = as.vector(put_observation_data$Strike),
-                                          Last = as.vector(put_observation_data$Last))
+  # Read put value and generate a dataframe
+  put_observation_dataframe <- data.frame(Strike = as.vector(straddle_observation_data$Strike),
+                                          Last = as.vector(straddle_observation_data$Put_LastPr))
   
-  # Add a new row with NA values to the original dataframe
+  # Add a new row with NA values to the dataframe
+  put_observation_dataframe <- na.omit(put_observation_dataframe)
   new_row <- data.frame(matrix(NA, ncol = length(put_column_names)))
   colnames(new_row) <- put_column_names
   put_dataframe <- rbind(put_dataframe, new_row)
@@ -266,6 +263,20 @@ price_tree <- as.data.frame(price_tree)
 price_tree$index <- 1:nrow(price_tree)
 price_tree <- gather(price_tree, key = "Column", value = "Value", -index)
 
+# TODO Tree without value
+test <- ggplot(data = price_tree, aes(x = index, y = Value)) +
+  geom_point(na.rm = TRUE, colour = "black") +
+  geom_text(aes(label = round(Value, 2), colour="black"),
+            hjust = 1.0, vjust = -0.7, na.rm = TRUE) +
+  labs(title = "MSFT TEST",
+       x = "Number of Rows",
+       y = "Adjusted Price") +
+  ggtitle("TEST") + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+print(test)
+
 # Print and save price tree
 tree_graph <- ggplot(data = real_prices, aes(x = seq_along(Adjusted), y = Adjusted)) +
   geom_line() +
@@ -323,7 +334,8 @@ cat("\tAverage:\t", avg_difference, "\n")
 ################################################################################
 
 # TODO (A lui è 21 a me 15 vedere se si hanno problemi con ultimo giorno)
-# TODO (Perche tra 125 e 135?) DO THE FOLLOWING FOR ALL VALUES BETWEEN 125 AND 135
+# TODO (# TODO Bisonga selezionare un range perchè altimenti sono troppi (PROJ 2))
+# DO THE FOLLOWING FOR ALL VALUES BETWEEN 125 AND 135
 
 # Get dataframe based on selected columns
 columns_to_keep <- names(call_dataframe)[names(call_dataframe) >= '125' & names(call_dataframe) <= '135']

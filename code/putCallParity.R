@@ -16,16 +16,22 @@ library(stringr)
 # Call - Put = StockPrice - Strike/(1 + riskFreeRate)
 # Let's consider the American option data as if they were European options.
 
-# Define the parameters
-stock_price <- 323.70 # TODO price on 2023-08-10
-risk_free_rate <- 0.002420839 # TODO HARDCODED
+# Get stock price at 2023-08-28
+getSymbols("MSFT", from = "2023-08-28", to = "2023-08-29")
+price <- Ad(get("MSFT"))
+price <- data.frame(Adjusted = as.vector(price))
+stock_price <- price$Adjusted
+
+# Read Risk-Free rate
+risk_free_rate <- read.csv("data/txt/risk_free_rate.txt")
+risk_free_rate <- as.numeric(risk_free_rate$x)
 
 # Get options price
-call_price <- read.csv("data/csv/call.csv", header = TRUE)
-put_price <- read.csv("data/csv/put.csv", header = TRUE)
+call_price <- read.csv("data/csv/call_opt_price.csv", header = TRUE)
+put_price <- read.csv("data/csv/put_opt_price.csv", header = TRUE)
 
-# TODO (perchè solo in quel range)
-columns_to_keep <- names(call_price)[names(call_price) >= 'x116' & names(call_price) <= 'x136'] # the last value is not included
+# TODO Bisonga selezionare un range perchè altimenti sono troppi (PROJ 2)
+columns_to_keep <- names(call_price)[names(call_price) >= 'x116' & names(call_price) <= 'x136'] # The last value is not included
 call_price <- t(call_price[1, columns_to_keep])
 put_price <- t(put_price[1, columns_to_keep])
 

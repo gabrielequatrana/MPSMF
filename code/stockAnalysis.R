@@ -43,8 +43,7 @@ log_returns_data <- data.frame(Date = as.Date(dates),
                            Low = as.vector(diff(log(stock_data$Low))),
                            Close = as.vector(diff(log(stock_data$Close))))
 
-# Print and save Stock Logarithmic Returns 
-# TODO (log(S(n+1)/S(n)))
+# Print and save Stock Logarithmic Returns plot
 log_returns_graph <- ggplot(data = log_returns_data, aes(x = Date)) +
   geom_line(aes(y = Adjusted, color = "Adjusted")) +
   labs(title = "Logarithmic returns", x = "Date", y = "Returns", color = "Metric") +
@@ -55,12 +54,7 @@ log_returns_graph <- ggplot(data = log_returns_data, aes(x = Date)) +
 print(log_returns_graph)
 ggsave("data/png/stock_log_returns.png", plot = log_returns_graph, width = 10, height = 4)
 
-# TODO Compute Volatility (Standard Deviation of returns)
-volatility <- sd(returns_data$Adjusted, na.rm = TRUE)
+# Compute Volatility (Standard Deviation of returns)
+volatility <- sd(log_returns_data$Adjusted, na.rm = TRUE)
 cat("\tVolatility:\t\t", volatility, "\n")
 write.csv(volatility, file = "data/txt/volatility.txt", row.names = FALSE)
-
-# TODO 252 Compute Annualized Volatility
-annualized_volatility <- sqrt(252) * volatility
-cat("\tAnnualized Volatility:\t", annualized_volatility, "\n")
-write.csv(annualized_volatility, file = "data/txt/annualized_volatility.txt", row.names = FALSE)

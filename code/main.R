@@ -12,10 +12,10 @@ try(dev.off(),silent=TRUE)
 cat(rep("\n",100))
 
 # Get the path of the currently running script
-script_path <- sys.frame(1)$ofile
+proj_dir <- dirname(normalizePath(rstudioapi::getSourceEditorContext()$path))
 
 # Set the working directory to the root directory
-setwd(dirname(dirname(script_path)))
+setwd(dirname(proj_dir))
 
 
 ################################################################################
@@ -31,6 +31,7 @@ library(reshape2)
 library(tidyr)
 library(dplyr)
 library(stringr)
+library(latticeExtra)
 
 
 ################################################################################
@@ -43,7 +44,7 @@ source("code/getStockData.R")
 
 # Run stockParams.R
 cat("\nCompute Stock Prices and Volatility on previous data\n")
-source("code/stockParams.R")
+source("code/stockAnalysis.R")
 
 # Run riskFreeRate.r
 cat("\nCompute an approximation of Risk Free Return Rate\n")

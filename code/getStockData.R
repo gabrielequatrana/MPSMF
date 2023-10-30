@@ -16,7 +16,7 @@ start_date <- as.Date("2021-08-28")
 end_date <- as.Date("2023-08-28")
 
 # Download stock data
-getSymbols(stock_name, from = start_date, to = end_date)
+getSymbols(stock_name, src = "yahoo", from = start_date, to = end_date)
 
 # Get stock information
 adjusted_prices <- Ad(get(stock_name))
