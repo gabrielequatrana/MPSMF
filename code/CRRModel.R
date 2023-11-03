@@ -24,7 +24,7 @@ generate_binomial_tree <- function(StartingValue, treeHeight){
   binomial_tree[1,1] <- StartingValue
   
   # Fill the tree
-  for (n in 0:treeHeight) {
+  for (n in 1:treeHeight) {
     for (k in 0:n) {
       S <- round(StartingValue*(u^k)*(d^(n-k)), 2)
       binomial_tree[n+1, k+1] <- S
@@ -118,7 +118,7 @@ sigma <- as.numeric(sigma$x)
 
 # Set some constant
 S0 <- real_prices$Adjusted[1] # Set S0 to first adjusted real price
-N <- 15                       # Trading days from 2023-08-28 to 2023-09-15
+N <- 14                       # Trading days from 2023-08-28 to 2023-09-15 (4th sep holiday)
 delta_t <- 1                  # One day in a trading year
 
 # Set the two possible outcomes
@@ -256,30 +256,32 @@ ggsave("data/png/put_price_graph.png", plot = put_price_graph, width = 10, heigh
 ################################################################################
 
 # Generate price binomial tree using S0
-price_tree <- generate_binomial_tree(S0, N)
+price_tree <- generate_binomial_tree(S0, N-1)
 
 # Convert the matrix to a dataframe
 price_tree <- as.data.frame(price_tree)
 price_tree$index <- 1:nrow(price_tree)
 price_tree <- gather(price_tree, key = "Column", value = "Value", -index)
 
-# TODO Tree without value
+# TODO Print and save price tree without value
 test <- ggplot(data = price_tree, aes(x = index, y = Value)) +
   geom_point(na.rm = TRUE, colour = "black") +
-  geom_text(aes(label = round(Value, 2), colour="black"),
+  geom_text(aes(label = round(Value, 2), colour = "Stock value"),
             hjust = 1.0, vjust = -0.7, na.rm = TRUE) +
   labs(title = "MSFT TEST",
        x = "Number of Rows",
        y = "Adjusted Price") +
-  ggtitle("TEST") + 
+  scale_colour_manual(name = "Legend", labels = "Stock value",
+                      values = "blue", breaks = "Stock value") +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5))
 
 print(test)
+ggsave("data/png/tree_plot.png", plot = test, width = 10, height = 6)
 
 # Print and save price tree
 tree_graph <- ggplot(data = real_prices, aes(x = seq_along(Adjusted), y = Adjusted)) +
-  geom_line() +
+  geom_line(colour = "blue") +
   geom_point(data = price_tree, aes(x = index, y = Value)) +
   labs(title = "MSFT Adjusted Prices (Aug 28, 2023 - Sep 15, 2023)",
        x = "Number of Rows",
@@ -351,7 +353,7 @@ for(s in columns_to_keep){
   
   # Fill the dataframes
   for(i in (N):1){
-    StartingValue <- real_prices$Adjusted[N+2-i]
+    StartingValue <- real_prices$Adjusted[N+1-i]
     treeHeight <- i
     
     predicted_call <- predicted_call %>% add_row(CallValue = call_value(StartingValue, treeHeight, as.numeric(s)))

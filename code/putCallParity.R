@@ -36,7 +36,7 @@ call_price <- t(call_price[1, columns_to_keep])
 put_price <- t(put_price[1, columns_to_keep])
 
 # Get strike dataframe
-strike_prices <- data.frame(Strike_Price = as.numeric(columns_to_keep))
+strike_prices <- data.frame(Strike_Price = as.numeric(str_sub(columns_to_keep, 2)))
 
 # Calculate the RHS and LHS of Put-Call parity equation
 RHS <- stock_price - strike_prices / (1 + risk_free_rate)
