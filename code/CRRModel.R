@@ -223,7 +223,7 @@ for (file in straddle_files[-length(straddle_files)]) {
 # Save call option dataframe in csv file
 call_dataframe <- call_dataframe[order(call_dataframe$Date), ]
 write.csv(call_dataframe, file = "data/csv/call_opt_price.csv", row.names = FALSE)
-melted_call_dataframe <- melt(call_dataframe, id.vars = 'Date', variable.name = 'strike')
+melted_call_dataframe <- melt(call_dataframe, id.variances = 'Date', variable.name = 'strike')
 
 # Print and save call option price plot
 call_price_graph <- ggplot(melted_call_dataframe, aes(Date,value)) +
@@ -238,7 +238,7 @@ ggsave("data/png/call_price_graph.png", plot = call_price_graph, width = 10, hei
 # Save put option dataframe in csv file
 put_dataframe <- put_dataframe[order(put_dataframe$Date), ]
 write.csv(put_dataframe, file = "data/csv/put_opt_price.csv", row.names = FALSE)
-melted_put_dataframe <- melt(put_dataframe, id.vars = 'Date', variable.name = 'strike')
+melted_put_dataframe <- melt(put_dataframe, id.variances = 'Date', variable.name = 'strike')
 
 # Print and save put option price plot
 put_price_graph <- ggplot(melted_put_dataframe, aes(Date,value)) + 
@@ -263,7 +263,7 @@ price_tree <- as.data.frame(price_tree)
 price_tree$index <- 1:nrow(price_tree)
 price_tree <- gather(price_tree, key = "Column", value = "Value", -index)
 
-# TODO Print and save price tree without value
+# Print and save price tree
 test <- ggplot(data = price_tree, aes(x = index, y = Value)) +
   geom_point(na.rm = TRUE, colour = "black") +
   geom_text(aes(label = round(Value, 2), colour = "Stock value"),
@@ -273,19 +273,21 @@ test <- ggplot(data = price_tree, aes(x = index, y = Value)) +
        y = "Adjusted Price") +
   scale_colour_manual(name = "Legend", labels = "Stock value",
                       values = "blue", breaks = "Stock value") +
+  scale_x_continuous(breaks = seq(1, 14, 1)) +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5))
 
 print(test)
 ggsave("data/png/tree_plot.png", plot = test, width = 10, height = 6)
 
-# Print and save price tree
+# Print and save price tree with real prices
 tree_graph <- ggplot(data = real_prices, aes(x = seq_along(Adjusted), y = Adjusted)) +
   geom_line(colour = "blue") +
   geom_point(data = price_tree, aes(x = index, y = Value)) +
   labs(title = "MSFT Adjusted Prices (Aug 28, 2023 - Sep 15, 2023)",
        x = "Number of Rows",
        y = "Adjusted Price") +
+  scale_x_continuous(breaks = seq(1, 14, 1)) +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5))
 
@@ -335,17 +337,23 @@ cat("\tAverage:\t", avg_difference, "\n")
 # 4. Compute Call and Put options values with current CRR model
 ################################################################################
 
-# TODO (A lui è 21 a me 15 vedere se si hanno problemi con ultimo giorno)
-# TODO (# TODO Bisonga selezionare un range perchè altimenti sono troppi (PROJ 2))
-# DO THE FOLLOWING FOR ALL VALUES BETWEEN 125 AND 135
+# Compute variances of call last price for each strike
+variances <- data.frame(na.omit(sapply(call_dataframe[1:ncol(call_dataframe)-1], sd)))
+colnames(variances) <- c("Variance")
+variances <- cbind(Strike = rownames(variances), variances)
+rownames(variances) <- 1:nrow(variances)
+variances <- variances[rowSums(variances[2])>0, ]
 
-# Get dataframe based on selected columns
-columns_to_keep <- names(call_dataframe)[names(call_dataframe) >= '125' & names(call_dataframe) <= '135']
-call_dataframe <- call_dataframe[, columns_to_keep]
-put_dataframe <- put_dataframe[, columns_to_keep]
+# Select and save strikes to analyze based on the variance
+strike_to_keep <- subset(variances, Variance > 7)$Strike
+write.csv(strike_to_keep, file = "data/txt/strike_to_keep.txt", row.names = FALSE)
 
-# Repeat for each column
-for(s in columns_to_keep){
+# Get dataframe based on selected strikes
+call_dataframe <- call_dataframe[, strike_to_keep]
+put_dataframe <- put_dataframe[, strike_to_keep]
+
+# Repeat for each strike
+for(s in strike_to_keep){
   
   # Dataframe to store the values predicted by the CRR model
   predicted_call <- data.frame(CallValue = numeric(0))

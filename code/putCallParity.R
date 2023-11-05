@@ -30,13 +30,16 @@ risk_free_rate <- as.numeric(risk_free_rate$x)
 call_price <- read.csv("data/csv/call_opt_price.csv", header = TRUE)
 put_price <- read.csv("data/csv/put_opt_price.csv", header = TRUE)
 
-# TODO Bisonga selezionare un range perchè altimenti sono troppi (PROJ 2)
-columns_to_keep <- names(call_price)[names(call_price) >= 'x116' & names(call_price) <= 'x136'] # The last value is not included
-call_price <- t(call_price[1, columns_to_keep])
-put_price <- t(put_price[1, columns_to_keep])
+# Get previously computed strikes to analyze
+strike_to_keep <- read.csv("data/txt/strike_to_keep.txt")$x
+strike_to_keep <- paste0("X", strike_to_keep)
+
+# Get call and put prices based on strikes to analyze
+call_price <- t(call_price[1, strike_to_keep])
+put_price <- t(put_price[1, strike_to_keep])
 
 # Get strike dataframe
-strike_prices <- data.frame(Strike_Price = as.numeric(str_sub(columns_to_keep, 2)))
+strike_prices <- data.frame(Strike_Price = as.numeric(str_sub(strike_to_keep, 2)))
 
 # Calculate the RHS and LHS of Put-Call parity equation
 RHS <- stock_price - strike_prices / (1 + risk_free_rate)
