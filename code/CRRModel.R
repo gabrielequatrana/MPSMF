@@ -223,11 +223,11 @@ for (file in straddle_files[-length(straddle_files)]) {
 # Save call option dataframe in csv file
 call_dataframe <- call_dataframe[order(call_dataframe$Date), ]
 write.csv(call_dataframe, file = "data/csv/call_opt_price.csv", row.names = FALSE)
-melted_call_dataframe <- melt(call_dataframe, id.variances = 'Date', variable.name = 'strike')
+melted_call_dataframe <- melt(call_dataframe, id.vars = 'Date', variable.name = 'Strike')
 
 # Print and save call option price plot
-call_price_graph <- ggplot(melted_call_dataframe, aes(Date,value)) +
-  geom_line(aes(colour = strike)) +
+call_price_graph <- ggplot(melted_call_dataframe, aes(Date, value)) +
+  geom_line(aes(colour = Strike)) +
   labs(title = "Call Options Price History", x = "Date", y = "Price") +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5))
@@ -238,11 +238,11 @@ ggsave("data/png/call_price_graph.png", plot = call_price_graph, width = 10, hei
 # Save put option dataframe in csv file
 put_dataframe <- put_dataframe[order(put_dataframe$Date), ]
 write.csv(put_dataframe, file = "data/csv/put_opt_price.csv", row.names = FALSE)
-melted_put_dataframe <- melt(put_dataframe, id.variances = 'Date', variable.name = 'strike')
+melted_put_dataframe <- melt(put_dataframe, id.vars = 'Date', variable.name = 'Strike')
 
 # Print and save put option price plot
-put_price_graph <- ggplot(melted_put_dataframe, aes(Date,value)) + 
-  geom_line(aes(colour = strike)) + 
+put_price_graph <- ggplot(melted_put_dataframe, aes(Date, value)) + 
+  geom_line(aes(colour = Strike)) + 
   labs(title = "Put Options Price History", x = "Date", y = "Price") +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5))
