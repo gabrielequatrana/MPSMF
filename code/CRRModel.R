@@ -263,8 +263,8 @@ price_tree <- as.data.frame(price_tree)
 price_tree$index <- 1:nrow(price_tree)
 price_tree <- gather(price_tree, key = "Column", value = "Value", -index)
 
-# Print and save price tree
-test <- ggplot(data = price_tree, aes(x = index, y = Value)) +
+# TODO Print and save price tree
+tree_plot <- ggplot(data = price_tree, aes(x = index, y = Value)) +
   geom_point(na.rm = TRUE, colour = "black") +
   geom_text(aes(label = round(Value, 2), colour = "Stock value"),
             hjust = 1.0, vjust = -0.7, na.rm = TRUE) +
@@ -277,8 +277,8 @@ test <- ggplot(data = price_tree, aes(x = index, y = Value)) +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5))
 
-print(test)
-ggsave("data/png/tree_plot.png", plot = test, width = 10, height = 6)
+print(tree_plot)
+ggsave("data/png/tree_plot.png", plot = tree_plot, width = 10, height = 6)
 
 # Print and save price tree with real prices
 tree_graph <- ggplot(data = real_prices, aes(x = seq_along(Adjusted), y = Adjusted)) +
