@@ -268,8 +268,8 @@ tree_plot <- ggplot(data = price_tree, aes(x = index, y = Value)) +
   geom_point(na.rm = TRUE, colour = "black") +
   geom_text(aes(label = round(Value, 2), colour = "Stock value"),
             hjust = 1.0, vjust = -0.7, na.rm = TRUE) +
-  labs(title = "MSFT TEST",
-       x = "Number of Rows",
+  labs(title = "MSFT Binomail Tree (Aug 28, 2023 - Sep 15, 2023)",
+       x = "Observation Day",
        y = "Adjusted Price") +
   scale_colour_manual(name = "Legend", labels = "Stock value",
                       values = "blue", breaks = "Stock value") +
@@ -285,7 +285,7 @@ tree_graph <- ggplot(data = real_prices, aes(x = seq_along(Adjusted), y = Adjust
   geom_line(colour = "blue") +
   geom_point(data = price_tree, aes(x = index, y = Value)) +
   labs(title = "MSFT Adjusted Prices (Aug 28, 2023 - Sep 15, 2023)",
-       x = "Number of Rows",
+       x = "Observation Day",
        y = "Adjusted Price") +
   scale_x_continuous(breaks = seq(1, 14, 1)) +
   theme_minimal() +
