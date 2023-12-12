@@ -228,9 +228,11 @@ melted_call_dataframe <- melt(call_dataframe, id.vars = 'Date', variable.name = 
 # Print and save call option price plot
 call_price_graph <- ggplot(melted_call_dataframe, aes(Date, value)) +
   geom_line(aes(colour = Strike)) +
-  labs(title = "Call Options Price History", x = "Date", y = "Price") +
+  labs(title = "MSFT Call Options Price History (Aug 28 - Sep 15)", x = "Date", y = "Price") +
   theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5))
+  scale_x_date(date_labels = "%d/%m", date_breaks = "1 day", expand = c(0,0)) +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle = 45, hjust = 1))
 
 print(call_price_graph)
 ggsave("data/png/call_price_graph.png", plot = call_price_graph, width = 10, height = 6)
@@ -243,9 +245,11 @@ melted_put_dataframe <- melt(put_dataframe, id.vars = 'Date', variable.name = 'S
 # Print and save put option price plot
 put_price_graph <- ggplot(melted_put_dataframe, aes(Date, value)) + 
   geom_line(aes(colour = Strike)) + 
-  labs(title = "Put Options Price History", x = "Date", y = "Price") +
+  labs(title = "MSFT Put Options Price History (Aug 28 - Sep 15)", x = "Date", y = "Price") +
   theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5))
+  scale_x_date(date_labels = "%d/%m", date_breaks = "1 day", expand = c(0,0)) +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle = 45, hjust = 1))
 
 print(put_price_graph)
 ggsave("data/png/put_price_graph.png", plot = put_price_graph, width = 10, height = 6)
@@ -263,31 +267,60 @@ price_tree <- as.data.frame(price_tree)
 price_tree$index <- 1:nrow(price_tree)
 price_tree <- gather(price_tree, key = "Column", value = "Value", -index)
 
-# TODO Print and save price tree
+# Print and save price tree
 tree_plot <- ggplot(data = price_tree, aes(x = index, y = Value)) +
   geom_point(na.rm = TRUE, colour = "black") +
   geom_text(aes(label = round(Value, 2), colour = "Stock value"),
-            hjust = 1.0, vjust = -0.7, na.rm = TRUE) +
-  labs(title = "MSFT Binomail Tree (Aug 28, 2023 - Sep 15, 2023)",
+            hjust = 0.92, vjust = -0.7, fontface = "bold", na.rm = TRUE) +
+  labs(title = "MSFT CRR Binomail Tree (Aug 28 - Sep 15)",
        x = "Observation Day",
        y = "Adjusted Price") +
   scale_colour_manual(name = "Legend", labels = "Stock value",
-                      values = "blue", breaks = "Stock value") +
+                      values = "darkcyan", breaks = "Stock value") +
   scale_x_continuous(breaks = seq(1, 14, 1)) +
   theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5))
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position = "none")
 
 print(tree_plot)
 ggsave("data/png/tree_plot.png", plot = tree_plot, width = 10, height = 6)
 
+# Initialize prediction band vectors
+pred_upp <- c(price_tree$Value[1])
+pred_low <- c(price_tree$Value[1])
+
+# Compute 80% prediction band for each observation day
+for(i in 2:(N)) {
+  price_day <- price_tree[floor(price_tree$index) == i, ]
+  price_day <- price_day[c(1,i), ]
+  pred_band_amp <- ((price_day$Value[2] - price_day$Value[1])*20/100)/2
+  
+  upp <- price_day$Value[2] - pred_band_amp
+  dwn <- price_day$Value[1] + pred_band_amp
+  
+  pred_upp <- c(pred_upp, upp)
+  pred_low <- c(pred_low, dwn)
+}
+
+# Add prediction band to dataframe
+real_prices <- cbind(real_prices, pred_upp, pred_low)
+
 # Print and save price tree with real prices
 tree_graph <- ggplot(data = real_prices, aes(x = seq_along(Adjusted), y = Adjusted)) +
-  geom_line(colour = "blue") +
+  geom_line(data = real_prices, aes(colour = "Stock value"), 
+            linetype = "solid", alpha = 1, linewidth = 1.3, group = 1) +
+  geom_ribbon(data = real_prices, alpha = 0.3, linewidth = 1.3, colour = "orangered",
+              aes(ymax = pred_upp, ymin = pred_low, fill = "80% pred. band"), group = 2) +
   geom_point(data = price_tree, aes(x = index, y = Value)) +
-  labs(title = "MSFT Adjusted Prices (Aug 28, 2023 - Sep 15, 2023)",
+  labs(title = "MSFT Adjusted Prices (Aug 28 - Sep 15)",
        x = "Observation Day",
        y = "Adjusted Price") +
-  scale_x_continuous(breaks = seq(1, 14, 1)) +
+  scale_colour_manual(name = "", labels = "Stock value",
+                      values = "darkcyan", breaks = "Stock value") +
+  scale_fill_manual(name = "", labels = "80% pred. band",
+                    values = "orangered", breaks = "80% pred. band") +
+  guides(colour = guide_legend(order=1), fill = guide_legend(order=2)) +
+  scale_x_continuous(breaks = seq(1, 14, 1), expand = c(0.01,0.01)) +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5))
 
@@ -311,12 +344,16 @@ difference <- data.frame(Value = unlist(difference))
 
 # Print and save difference plot
 difference_graph <- ggplot(difference, aes(x = seq_along(Value), y = Value)) +
-  geom_line() +
-  labs(title = "Difference between actual stock value and closest predicted value",
-       x = "",
-       y = "Values") +
+  geom_line(aes(colour = "Difference"), linewidth = 1.3) +
+  labs(title = "Difference between Stock Value and closest Predicted Value",
+       x = "Observation Day",
+       y = "Difference") +
+  scale_colour_manual(name = "", labels = "Difference",
+                      values = "darkcyan", breaks = "Difference") +
+  scale_x_continuous(breaks = seq(1, 14, 1), expand = c(0.01,0.01)) +
   theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5))
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position = "none")
 
 print(difference_graph)
 ggsave("data/png/difference_graph.png", plot = difference_graph, width = 10, height = 6)
@@ -337,58 +374,81 @@ cat("\tAverage:\t", avg_difference, "\n")
 # 4. Compute Call and Put options values with current CRR model
 ################################################################################
 
-# Compute variances of call last price for each strike
-variances <- data.frame(na.omit(sapply(call_dataframe[1:ncol(call_dataframe)-1], sd)))
-colnames(variances) <- c("Variance")
-variances <- cbind(Strike = rownames(variances), variances)
-rownames(variances) <- 1:nrow(variances)
-variances <- variances[rowSums(variances[2])>0, ]
-
-# Select and save strikes to analyze based on the variance
-strike_to_keep <- subset(variances, Variance > 7)$Strike
+# Select and save strikes to analyze
+strike_to_keep <- names(call_dataframe)[names(call_dataframe) >= '315' &
+                                          names(call_dataframe) <= '331']
 write.csv(strike_to_keep, file = "data/txt/strike_to_keep.txt", row.names = FALSE)
 
 # Get dataframe based on selected strikes
 call_dataframe <- call_dataframe[, strike_to_keep]
 put_dataframe <- put_dataframe[, strike_to_keep]
 
+# Get melted dataframe based on selected strikes
+melted_call_dataframe <- melted_call_dataframe[melted_call_dataframe$Strike %in% strike_to_keep,]
+melted_put_dataframe <- melted_put_dataframe[melted_put_dataframe$Strike %in% strike_to_keep,]
+
+# Print and save call option price plot
+call_keep_price_graph <- ggplot(melted_call_dataframe, aes(Date, value)) +
+  geom_line(aes(colour = Strike)) +
+  labs(title = "MSFT Call Options Price History (Aug 28 - Sep 15)", x = "Date", y = "Price") +
+  theme_minimal() +
+  scale_x_date(date_labels = "%d/%m", date_breaks = "1 day", expand = c(0,0)) +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(call_keep_price_graph)
+ggsave("data/png/call_keep_price_graph.png", plot = call_keep_price_graph, width = 10, height = 6)
+
+# Print and save put option price plot
+put_keep_price_graph <- ggplot(melted_put_dataframe, aes(Date, value)) + 
+  geom_line(aes(colour = Strike)) + 
+  labs(title = "MSFT Put Options Price History (Aug 28 - Sep 15)", x = "Date", y = "Price") +
+  theme_minimal() +
+  scale_x_date(date_labels = "%d/%m", date_breaks = "1 day", expand = c(0,0)) +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(put_keep_price_graph)
+ggsave("data/png/put_keep_price_graph.png", plot = put_keep_price_graph, width = 10, height = 6)
+
+# TODO Valutare max expected e current payoff da vedere come
 # Repeat for each strike
-for(s in strike_to_keep){
-  
-  # Dataframe to store the values predicted by the CRR model
-  predicted_call <- data.frame(CallValue = numeric(0))
-  predicted_put <- data.frame(PutValue = numeric(0))
-  
-  # Fill the dataframes
-  for(i in (N):1){
-    StartingValue <- real_prices$Adjusted[N+1-i]
-    treeHeight <- i
-    
-    predicted_call <- predicted_call %>% add_row(CallValue = call_value(StartingValue, treeHeight, as.numeric(s)))
-    predicted_put <- predicted_put %>% add_row(PutValue = put_value(StartingValue, treeHeight, as.numeric(s)))
-  }
-  
-  # Print and save call prediction
-  call_prediction <- ggplot(data = predicted_call, aes(x = seq_along(CallValue))) +
-    geom_line(aes(y = CallValue, color = "Estimate")) +
-    geom_line(aes(y = call_dataframe[[s]], color = "Real")) +
-    labs(title = paste("Call Value for Strike ", s), x = "Date", y = "Price", color = "Metric") +
-    scale_color_manual(values = c("Estimate" = "blue", "Real" = "orange")) +
-    theme_minimal() +
-    theme(plot.title = element_text(hjust = 0.5))
-  
-  print(call_prediction)
-  ggsave(paste("data/png/call_prediction_strike_", s, ".png"), plot = call_prediction, width = 10, height = 4)
-  
-  # Print and save put prediction
-  put_prediction <- ggplot(data = predicted_put, aes(x = seq_along(PutValue))) +
-    geom_line(aes(y = PutValue, color = "Estimate")) +
-    geom_line(aes(y = put_dataframe[[s]], color = "Real")) +
-    labs(title = paste("Put Value for Strike ", s), x = "Date", y = "Price", color = "Metric") +
-    scale_color_manual(values = c("Estimate" = "blue", "Real" = "orange")) +
-    theme_minimal() +
-    theme(plot.title = element_text(hjust = 0.5))
-  
-  print(put_prediction)
-  ggsave(paste("data/png/put_prediction_strike_", s, ".png"), plot = put_prediction, width = 10, height = 4)
-}
+# for(s in strike_to_keep){
+#   
+#   # Dataframe to store the values predicted by the CRR model
+#   predicted_call <- data.frame(CallValue = numeric(0))
+#   predicted_put <- data.frame(PutValue = numeric(0))
+#   
+#   # Fill the dataframes
+#   for(i in (N):1){
+#     StartingValue <- real_prices$Adjusted[N+1-i]
+#     treeHeight <- i
+#     
+#     predicted_call <- predicted_call %>% add_row(CallValue = call_value(StartingValue, treeHeight, as.numeric(s)))
+#     predicted_put <- predicted_put %>% add_row(PutValue = put_value(StartingValue, treeHeight, as.numeric(s)))
+#   }
+#   
+#   # Print and save call prediction
+#   call_prediction <- ggplot(data = predicted_call, aes(x = seq_along(CallValue))) +
+#     geom_line(aes(y = CallValue, color = "Estimate")) +
+#     geom_line(aes(y = call_dataframe[[s]], color = "Real")) +
+#     labs(title = paste("Call Value for Strike ", s), x = "Date", y = "Price", color = "Metric") +
+#     scale_color_manual(values = c("Estimate" = "blue", "Real" = "orange")) +
+#     theme_minimal() +
+#     theme(plot.title = element_text(hjust = 0.5))
+#   
+#   print(call_prediction)
+#   ggsave(paste("data/png/call_prediction_strike_", s, ".png"), plot = call_prediction, width = 10, height = 4)
+#   
+#   # Print and save put prediction
+#   put_prediction <- ggplot(data = predicted_put, aes(x = seq_along(PutValue))) +
+#     geom_line(aes(y = PutValue, color = "Estimate")) +
+#     geom_line(aes(y = put_dataframe[[s]], color = "Real")) +
+#     labs(title = paste("Put Value for Strike ", s), x = "Date", y = "Price", color = "Metric") +
+#     scale_color_manual(values = c("Estimate" = "blue", "Real" = "orange")) +
+#     theme_minimal() +
+#     theme(plot.title = element_text(hjust = 0.5))
+#   
+#   print(put_prediction)
+#   ggsave(paste("data/png/put_prediction_strike_", s, ".png"), plot = put_prediction, width = 10, height = 4)
+# }

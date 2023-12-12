@@ -37,3 +37,4 @@ stock_data <- data.frame(Date = index(closing_prices),
 
 # Save the downloaded file as csv
 write.csv(stock_data, file = "data/csv/MSFT_data.csv", row.names = FALSE)
+

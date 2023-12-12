@@ -54,6 +54,6 @@ source("code/riskFreeRate.R")
 cat("\nEstimate the value of Put and Call options with the CRR model and compare price data to the CRR binomial tree\n")
 source("code/CRRModel.R")
 
-# Run putCallParity.R
-cat("\nCompute the put call parity function over the options data retrieved\n")
-source("code/putCallParity.R")
+# Run putCallInequality.R
+cat("\nCompute the put call inequality function over the options data retrieved\n")
+source("code/putCallInequality.R")
