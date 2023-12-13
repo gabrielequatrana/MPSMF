@@ -33,7 +33,7 @@ generate_binomial_tree <- function(StartingValue, treeHeight){
   return(binomial_tree)
 }
 
-# Compute call option value
+# Compute call option predicted value
 call_value <- function(StartingValue, treeHeight, Strike) {
   
   # Generate call binomial tree
@@ -56,7 +56,7 @@ call_value <- function(StartingValue, treeHeight, Strike) {
   return(call_tree[1,1])
 }
 
-# Compute put option value
+# Compute put option predicted value
 put_value <- function(StartingValue, treeHeight, Strike) {
   
   # Generate call binomial tree
@@ -304,6 +304,7 @@ for(i in 2:(N)) {
 
 # Add prediction band to dataframe
 real_prices <- cbind(real_prices, pred_upp, pred_low)
+rownames(real_prices) <- 1:nrow(real_prices)
 
 # Print and save price tree with real prices
 tree_graph <- ggplot(data = real_prices, aes(x = seq_along(Adjusted), y = Adjusted)) +
@@ -331,6 +332,7 @@ ggsave("data/png/tree_graph.png", plot = tree_graph, width = 10, height = 6)
 price_tree <- na.omit(price_tree)
 price_tree <- price_tree[order(price_tree$index), ]
 price_tree <- subset(price_tree, select = -Column)
+rownames(price_tree) <- 1:nrow(price_tree)
 
 # Compute the difference between the real value and the closest predicted value
 difference <- list()
@@ -371,7 +373,7 @@ cat("\tAverage:\t", avg_difference, "\n")
 
 
 ################################################################################
-# 4. Compute Call and Put options values with current CRR model
+# 4. Analyze Call and Put options with strike between 315 and 330
 ################################################################################
 
 # Select and save strikes to analyze
@@ -411,44 +413,52 @@ put_keep_price_graph <- ggplot(melted_put_dataframe, aes(Date, value)) +
 print(put_keep_price_graph)
 ggsave("data/png/put_keep_price_graph.png", plot = put_keep_price_graph, width = 10, height = 6)
 
-# TODO Valutare max expected e current payoff da vedere come
-# Repeat for each strike
-# for(s in strike_to_keep){
-#   
-#   # Dataframe to store the values predicted by the CRR model
-#   predicted_call <- data.frame(CallValue = numeric(0))
-#   predicted_put <- data.frame(PutValue = numeric(0))
-#   
-#   # Fill the dataframes
-#   for(i in (N):1){
-#     StartingValue <- real_prices$Adjusted[N+1-i]
-#     treeHeight <- i
-#     
-#     predicted_call <- predicted_call %>% add_row(CallValue = call_value(StartingValue, treeHeight, as.numeric(s)))
-#     predicted_put <- predicted_put %>% add_row(PutValue = put_value(StartingValue, treeHeight, as.numeric(s)))
-#   }
-#   
-#   # Print and save call prediction
-#   call_prediction <- ggplot(data = predicted_call, aes(x = seq_along(CallValue))) +
-#     geom_line(aes(y = CallValue, color = "Estimate")) +
-#     geom_line(aes(y = call_dataframe[[s]], color = "Real")) +
-#     labs(title = paste("Call Value for Strike ", s), x = "Date", y = "Price", color = "Metric") +
-#     scale_color_manual(values = c("Estimate" = "blue", "Real" = "orange")) +
-#     theme_minimal() +
-#     theme(plot.title = element_text(hjust = 0.5))
-#   
-#   print(call_prediction)
-#   ggsave(paste("data/png/call_prediction_strike_", s, ".png"), plot = call_prediction, width = 10, height = 4)
-#   
-#   # Print and save put prediction
-#   put_prediction <- ggplot(data = predicted_put, aes(x = seq_along(PutValue))) +
-#     geom_line(aes(y = PutValue, color = "Estimate")) +
-#     geom_line(aes(y = put_dataframe[[s]], color = "Real")) +
-#     labs(title = paste("Put Value for Strike ", s), x = "Date", y = "Price", color = "Metric") +
-#     scale_color_manual(values = c("Estimate" = "blue", "Real" = "orange")) +
-#     theme_minimal() +
-#     theme(plot.title = element_text(hjust = 0.5))
-#   
-#   print(put_prediction)
-#   ggsave(paste("data/png/put_prediction_strike_", s, ".png"), plot = put_prediction, width = 10, height = 4)
-# }
+
+################################################################################
+# 5. Compute Call and Put options prediction values with current CRR model
+################################################################################
+
+# Make predictions for call and put options
+for(s in strike_to_keep) {
+
+  # Dataframe to store the values predicted by the CRR model
+  predicted_call <- data.frame(CallValue = numeric(0))
+  predicted_put <- data.frame(PutValue = numeric(0))
+
+  # Fill the dataframes
+  for(i in N:1){
+    StartingValue <- real_prices$Adjusted[N+2-i]
+    treeHeight <- i
+
+    predicted_call <- predicted_call %>% add_row(CallValue = call_value(StartingValue, treeHeight, as.numeric(s)))
+    predicted_put <- predicted_put %>% add_row(PutValue = put_value(StartingValue, treeHeight, as.numeric(s)))
+  }
+
+  # Print and save call prediction
+  call_prediction <- ggplot(data = predicted_call, aes(x = seq_along(CallValue))) +
+    geom_line(aes(y = CallValue, color = "Expected Payoff")) +
+    geom_line(aes(y = call_dataframe[[s]], color = "Current Payoff")) +
+    labs(title = paste0("American Call Option Payoff (Strike ", s, "$)"),
+         x = "Observation Day", y = "Price", color = "Legend") +
+    scale_color_manual(values = c("Expected Payoff" = "darkcyan", "Current Payoff" = "orange")) +
+    theme_minimal() +
+    scale_x_continuous(breaks = seq(1, 14, 1), expand = c(0.01,0.01)) +
+    theme(plot.title = element_text(hjust = 0.5))
+
+  print(call_prediction)
+  ggsave(paste("data/png/call_prediction_strike_", s, ".png"), plot = call_prediction, width = 10, height = 4)
+
+  # Print and save put prediction
+  put_prediction <- ggplot(data = predicted_put, aes(x = seq_along(PutValue))) +
+    geom_line(aes(y = PutValue, color = "Expected Payoff")) +
+    geom_line(aes(y = put_dataframe[[s]], color = "Current Payoff")) +
+    labs(title = paste0("American Put Option Payoff (Strike ", s, "$)"),
+         x = "Observation Day", y = "Price", color = "Legend") +
+    scale_color_manual(values = c("Expected Payoff" = "darkcyan", "Current Payoff" = "orange")) +
+    theme_minimal() +
+    scale_x_continuous(breaks = seq(1, 14, 1), expand = c(0.01,0.01)) +
+    theme(plot.title = element_text(hjust = 0.5))
+
+  print(put_prediction)
+  ggsave(paste("data/png/put_prediction_strike_", s, ".png"), plot = put_prediction, width = 10, height = 4)
+}
