@@ -4,7 +4,10 @@ Progetto per il corso *Metodi Probabilistici e Statistici per i Mercati Finanzia
 
 ## Scopo del progetto
 
-Il progetto si focalizza sull'analisi del titolo azionario *MSFT* i cui dati storici sono stati ottenuti da Yahoo Finance. In particolare, è stato analizzato l'andamento del titolo negli ultimi due anni, è stata calcolata la volatilità del titolo e sono stati confrontati i rendimenti attesi ottenuti tramite il modello CRR con qelli reali dei dati storici.
+Il progetto si focalizza sull'analisi del titolo azionario *MSFT* i cui dati storici sono stati ottenuti da *Yahoo Finance*. In particolare:
+- È stato analizzato l'andamento del titolo negli ultimi due anni.
+- Sono state analizzate le opzioni sia di vendita che di acquisto relative al titolo.
+- È stato costruito un modello CRR per confrontare le stime prodotte con i dati storici del titolo.
 
 ## Prelievo dei dati
 
